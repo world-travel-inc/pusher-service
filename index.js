@@ -7,35 +7,53 @@ module.exports = function pusherService(options) {
     var subscribedChannels = {};
 
     this.publish = function publish(channelName, eventName, message, callback) {
-        const deflatedMessageBytes = pako.deflate(message, { to: 'string'});
-        const base64DeflatedMessage = Buffer.from(deflatedMessageBytes).toString('base64');
-
-        this.pusherNetwork.trigger(channelName, eventName, base64DeflatedMessage, null, callback);
+        if (channelName && eventName && message) {
+            var type = 'S';
+            if (typeof message === 'object') {
+                message = JSON.stringify(message);
+                type = 'O';
+            }
+            const deflatedMessageBytes = pako.deflate(type + message, { to: 'string' });
+            const base64DeflatedMessage = Buffer.from(deflatedMessageBytes).toString('base64');
+    
+            pusherNetwork.trigger(channelName, eventName, base64DeflatedMessage, null, callback);
+        }
     };
 
     this.subscribe = function subscribe(channelName, callback) {
-        if (!(channelName in this.subscribedChannels)) {
-            this.subscribedChannels[channelName] = callback;
+        if (!(channelName in subscribedChannels)) {
+            subscribedChannels[channelName] = callback;
 
-            const channel = this.pusherNetwork.subscribe(channelName);
+            const channel = pusherNetwork.subscribe(channelName);
             channel.bind_global((context, encodedData) => {
                 if (context.indexOf('pusher:') === -1) {
                     const payloadBuffer = new Buffer.from(encodedData, 'base64').toString();
                     const payloadInflated = pako.inflate(payloadBuffer, { to: 'string' });
                     const data = new Buffer.from(payloadInflated, 'base64').toString('ascii');
+                    let result = null;
 
-                    this.subscribedChannels[channelName](context, data);
+                    if (data[0] === 'O') {
+                        result = JSON.parse(data.substring(1));
+                    } else {
+                        result = data.substring(1);
+                    }
+
+                    if (subscribedChannels[channelName]) {
+                        subscribedChannels[channelName](context, result);
+                    }
                 } else {
-                    this.subscribedChannels[channelName](context, encodedData);
+                    if (subscribedChannels[channelName]) {
+                        subscribedChannels[channelName](context, encodedData);
+                    }
                 }
             });
         }
     };
 
     this.unsubscribe = function unsubscribe(channelName) {
-        if (channelName in this.subscribedChannels) {
-            delete this.subscribedChannels[channelName];
-            this.pusherNetwork.unsubscribe(channelName);
+        if (channelName && channelName in subscribedChannels) {
+            delete subscribedChannels[channelName];
+            pusherNetwork.unsubscribe(channelName);
         }
     }
 };
