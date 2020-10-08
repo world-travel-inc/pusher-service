@@ -27,15 +27,14 @@ module.exports = function pusherService(options) {
             const channel = pusherNetwork.subscribe(channelName);
             channel.bind_global((context, encodedData) => {
                 if (context.indexOf('pusher:') === -1) {
-                    const payloadBuffer = new Buffer.from(encodedData, 'base64').toString();
+                    const payloadBuffer = Buffer.from(encodedData, 'base64').toString();
                     const payloadInflated = pako.inflate(payloadBuffer, { to: 'string' });
-                    const data = new Buffer.from(payloadInflated, 'base64').toString('ascii');
                     let result = null;
 
-                    if (data[0] === 'O') {
-                        result = JSON.parse(data.substring(1));
+                    if (payloadInflated[0] === 'O') {
+                        result = JSON.parse(payloadInflated.substring(1));
                     } else {
-                        result = data.substring(1);
+                        result = payloadInflated.substring(1);
                     }
 
                     if (subscribedChannels[channelName]) {
