@@ -7,7 +7,7 @@ module.exports = function pusherService(options) {
     var subscribedChannels = {};
 
     this.publish = function publish(channelName, eventName, message, callback) {
-        const deflatedMessageBytes = Pako.deflate(message, { to: 'string'});
+        const deflatedMessageBytes = pako.deflate(message, { to: 'string'});
         const base64DeflatedMessage = Buffer.from(deflatedMessageBytes).toString('base64');
 
         this.pusherNetwork.trigger(channelName, eventName, base64DeflatedMessage, null, callback);
