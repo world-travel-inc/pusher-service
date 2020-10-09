@@ -8,6 +8,8 @@ module.exports = function pusherService(options) {
 
     this.publish = function publish(channelName, eventName, message, callback) {
         if (channelName && eventName && message) {
+            console.log('Send - Channel (' + channelName + ') Event (' + eventName + '): ' + message);
+
             var type = 'S';
             if (typeof message === 'object') {
                 message = JSON.stringify(message);
@@ -31,10 +33,14 @@ module.exports = function pusherService(options) {
                     const payloadInflated = pako.inflate(payloadBuffer, { to: 'string' });
                     let result = null;
 
+                    const message = payloadInflated.substring(1);
+
+                    console.log('Recv - Channel (' + channelName + ') Event (' + eventName + '): ' + message);
+
                     if (payloadInflated[0] === 'O') {
-                        result = JSON.parse(payloadInflated.substring(1));
+                        result = JSON.parse(message);
                     } else {
-                        result = payloadInflated.substring(1);
+                        result = message;
                     }
 
                     if (subscribedChannels[channelName]) {
