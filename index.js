@@ -8,13 +8,14 @@ module.exports = function pusherService(options) {
 
     this.publish = function publish(channelName, eventName, message, callback) {
         if (channelName && eventName && message) {
-            console.log('Send - Channel (' + channelName + ') Event (' + eventName + '): ' + message);
-
             var type = 'S';
             if (typeof message === 'object') {
                 message = JSON.stringify(message);
                 type = 'O';
             }
+
+            console.log('Send - Channel (' + channelName + ') Event (' + eventName + '): ' + message);
+
             const deflatedMessageBytes = pako.deflate(type + message, { to: 'string' });
             const base64DeflatedMessage = Buffer.from(deflatedMessageBytes).toString('base64');
     
